@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BloodConnect — Save Lives Together</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+/* ─── CSS Variables ──────────────────────────────────────────── */
+:root {
+  --red:        #C0392B;
+  --red-deep:   #922B21;
+  --red-light:  #FADBD8;
+  --red-glow:   rgba(192,57,43,0.12);
+  --white:      #FFFFFF;
+  --off-white:  #FDF9F9;
+  --gray-50:    #F9F0F0;
+  --gray-100:   #F3E5E5;
+  --gray-300:   #D4A5A5;
+  --gray-500:   #8B5E5E;
+  --gray-700:   #4A2C2C;
+  --gray-900:   #1A0A0A;
+  --success:    #1A7A4A;
+  --warning:    #C87D0E;
+  --info:       #1565C0;
+  --shadow-sm:  0 2px 8px rgba(192,57,43,0.08);
+  --shadow-md:  0 6px 24px rgba(192,57,43,0.14);
+  --shadow-lg:  0 16px 48px rgba(192,57,43,0.18);
+  --radius:     14px;
+  --radius-sm:  8px;
+  --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ─── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--off-white);
+  color: var(--gray-900);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--gray-50); }
+::-webkit-scrollbar-thumb { background: var(--red-light); border-radius: 3px; }
+
+/* ─── Toast Notifications ────────────────────────────────────── */
+#toast-container {
+  position: fixed; top: 24px; right: 24px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.toast {
+  padding: 14px 20px; border-radius: var(--radius-sm);
+  font-size: 0.875rem; font-weight: 500; max-width: 340px;
+  box-shadow: var(--shadow-md); pointer-events: all;
+  animation: slideInRight 0.3s ease, fadeOut 0.4s ease 3.6s forwards;
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.success { background: #E8F5E9; color: #1B5E20; border-left: 4px solid #2E7D32; }
+.toast.error   { background: #FFEBEE; color: #B71C1C; border-left: 4px solid var(--red); }
+.toast.info    { background: #E3F2FD; color: #0D47A1; border-left: 4px solid #1565C0; }
+.toast.warning { background: #FFF8E1; color: #E65100; border-left: 4px solid #F57F17; }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(120%); } }
+
+/* ─── Loader Overlay ─────────────────────────────────────────── */
+#loader {
+  position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(4px); z-index: 8888;
+  display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#loader.show { display: flex; }
+.spinner {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 4px solid var(--red-light); border-top-color: var(--red);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Navigation ─────────────────────────────────────────────── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--white); border-bottom: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+}
+.nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 24px;
+  display: flex; align-items: center; height: 68px; gap: 8px;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900;
+  color: var(--red); text-decoration: none; margin-right: auto;
+}
+.nav-brand .drop { color: var(--gray-900); }
+.blood-icon { font-size: 1.6rem; animation: pulse-icon 2s ease-in-out infinite; }
+@keyframes pulse-icon { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+.nav-btn {
+  padding: 8px 18px; border-radius: 24px; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition); border: none; text-decoration: none;
+  font-family: 'DM Sans', sans-serif;
+}
+.nav-btn.ghost { background: transparent; color: var(--gray-700); }
+.nav-btn.ghost:hover { background: var(--gray-50); color: var(--red); }
+.nav-btn.primary { background: var(--red); color: white; }
+.nav-btn.primary:hover { background: var(--red-deep); box-shadow: var(--shadow-sm); }
+.nav-btn.active { background: var(--red-light); color: var(--red-deep); }
+
+/* ─── Pages ──────────────────────────────────────────────────── */
+.page { display: none; animation: fadeUp 0.35s ease; }
+.page.active { display: block; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── Hero ───────────────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(135deg, var(--red-deep) 0%, var(--red) 60%, #E74C3C 100%);
+  color: white; padding: 80px 24px; text-align: center; position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-content { position: relative; max-width: 700px; margin: 0 auto; }
+.hero h1 {
+  font-family: 'Playfair Display', serif; font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-weight: 900; line-height: 1.1; margin-bottom: 20px;
+}
+.hero h1 span { display: block; font-size: 0.55em; font-weight: 400; opacity: 0.85; margin-bottom: 8px; }
+.hero p { font-size: 1.1rem; opacity: 0.9; margin-bottom: 36px; line-height: 1.6; }
+.hero-btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn-hero-primary {
+  padding: 15px 36px; background: white; color: var(--red-deep);
+  border-radius: 32px; font-weight: 700; font-size: 1rem; border: none;
+  cursor: pointer; transition: var(--transition); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
+.btn-hero-ghost {
+  padding: 15px 36px; background: transparent; color: white;
+  border: 2px solid rgba(255,255,255,0.6); border-radius: 32px;
+  font-weight: 600; font-size: 1rem; cursor: pointer; transition: var(--transition);
+}
+.btn-hero-ghost:hover { background: rgba(255,255,255,0.15); border-color: white; }
+
+/* ─── Stats Bar ──────────────────────────────────────────────── */
+.stats-bar {
+  background: white; border-bottom: 1px solid var(--gray-100);
+  padding: 24px; display: flex; justify-content: center; gap: 48px; flex-wrap: wrap;
+}
+.stat { text-align: center; }
+.stat-num {
+  font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900;
+  color: var(--red); line-height: 1;
+}
+.stat-label { font-size: 0.78rem; color: var(--gray-500); font-weight: 500; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ─── Section ────────────────────────────────────────────────── */
+.section { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
+.section-header { margin-bottom: 36px; }
+.section-header h2 {
+  font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700;
+  color: var(--gray-900); margin-bottom: 8px;
+}
+.section-header p { color: var(--gray-500); font-size: 0.95rem; }
+.badge-red {
+  display: inline-block; background: var(--red-light); color: var(--red-deep);
+  padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────── */
+.card {
+  background: white; border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); border: 1px solid var(--gray-100);
+  transition: var(--transition);
+}
+.card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.card-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--gray-100);
+  display: flex; align-items: center; gap: 10px;
+}
+.card-header h3 { font-size: 1rem; font-weight: 600; color: var(--gray-900); }
+.card-body { padding: 24px; }
+
+/* ─── Grid ───────────────────────────────────────────────────── */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+
+/* ─── Forms ──────────────────────────────────────────────────── */
+.form-group { margin-bottom: 18px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; }
+input, select, textarea {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--gray-100);
+  border-radius: var(--radius-sm); font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+  color: var(--gray-900); background: white; transition: var(--transition); outline: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--red); box-shadow: 0 0 0 3px var(--red-glow);
+}
+input::placeholder { color: var(--gray-300); }
+textarea { resize: vertical; min-height: 90px; }
+
+/* ─── Buttons ────────────────────────────────────────────────── */
+.btn {
+  padding: 11px 24px; border-radius: 10px; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition); border: none;
+  font-family: 'DM Sans', sans-serif; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary { background: var(--red); color: white; }
+.btn-primary:hover { background: var(--red-deep); box-shadow: var(--shadow-sm); }
+.btn-outline { background: transparent; color: var(--red); border: 1.5px solid var(--red); }
+.btn-outline:hover { background: var(--red-light); }
+.btn-ghost { background: var(--gray-50); color: var(--gray-700); }
+.btn-ghost:hover { background: var(--gray-100); }
+.btn-danger { background: var(--red-deep); color: white; }
+.btn-danger:hover { background: #7B241C; }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #145A32; }
+.btn-sm { padding: 7px 14px; font-size: 0.8rem; border-radius: 8px; }
+.btn-full { width: 100%; justify-content: center; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Blood Group Chips ──────────────────────────────────────── */
+.blood-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.blood-chip {
+  padding: 7px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+  cursor: pointer; transition: var(--transition);
+  border: 2px solid var(--gray-100); background: white; color: var(--gray-700);
+}
+.blood-chip:hover { border-color: var(--red); color: var(--red); }
+.blood-chip.active { background: var(--red); color: white; border-color: var(--red); }
+
+/* ─── Donor Cards ────────────────────────────────────────────── */
+.donor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.donor-card {
+  background: white; border-radius: var(--radius); padding: 20px;
+  border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm);
+  transition: var(--transition); position: relative; overflow: hidden;
+}
+.donor-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.donor-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--red), var(--red-deep));
+}
+.donor-blood-badge {
+  display: inline-block; background: var(--red); color: white;
+  padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 800;
+  margin-bottom: 12px; font-family: 'Playfair Display', serif;
+}
+.donor-name { font-size: 1.05rem; font-weight: 600; color: var(--gray-900); margin-bottom: 4px; }
+.donor-meta { font-size: 0.82rem; color: var(--gray-500); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.donor-actions { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+.cooldown-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #FFF3E0; color: #E65100; padding: 3px 10px;
+  border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-top: 8px;
+}
+.available-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #E8F5E9; color: var(--success); padding: 3px 10px;
+  border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-top: 8px;
+}
+
+/* ─── Hospital Cards ─────────────────────────────────────────── */
+.hospital-card {
+  background: white; border-radius: var(--radius); padding: 24px;
+  border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.hospital-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.hospital-icon { width: 48px; height: 48px; background: var(--red-light); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 14px; }
+.hospital-name { font-size: 1rem; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
+.hospital-meta { font-size: 0.82rem; color: var(--gray-500); margin-bottom: 4px; }
+
+/* ─── Alert Cards ────────────────────────────────────────────── */
+.alert-card {
+  background: white; border-radius: var(--radius); padding: 20px;
+  border-left: 5px solid var(--red); box-shadow: var(--shadow-sm);
+  transition: var(--transition); margin-bottom: 12px;
+}
+.alert-card.resolved { border-left-color: var(--success); opacity: 0.75; }
+.alert-urgent { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.urgency-badge {
+  padding: 3px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+}
+.urgency-CRITICAL { background: #FFEBEE; color: #B71C1C; }
+.urgency-HIGH     { background: #FFF3E0; color: #E65100; }
+.urgency-MEDIUM   { background: #FFF9C4; color: #F57F17; }
+.urgency-LOW      { background: #E8F5E9; color: var(--success); }
+
+/* ─── Dashboard ──────────────────────────────────────────────── */
+.dash-stat {
+  background: white; border-radius: var(--radius); padding: 24px;
+  border: 1px solid var(--gray-100); text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.dash-stat-num {
+  font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 900;
+  color: var(--red); line-height: 1;
+}
+.dash-stat-label { font-size: 0.8rem; color: var(--gray-500); margin-top: 6px; font-weight: 500; }
+
+/* ─── Search Bar ─────────────────────────────────────────────── */
+.search-bar {
+  background: white; border-radius: var(--radius); padding: 20px 24px;
+  border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm);
+  display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px;
+}
+.search-bar .form-group { margin-bottom: 0; flex: 1; min-width: 160px; }
+
+/* ─── Empty State ────────────────────────────────────────────── */
+.empty-state {
+  text-align: center; padding: 60px 24px; color: var(--gray-500);
+}
+.empty-state .empty-icon { font-size: 3.5rem; margin-bottom: 16px; }
+.empty-state h3 { font-size: 1.1rem; font-weight: 600; color: var(--gray-700); margin-bottom: 8px; }
+.empty-state p { font-size: 0.9rem; }
+
+/* ─── Modal ──────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(26,10,10,0.5); backdrop-filter: blur(3px);
+  z-index: 1000; display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white; border-radius: var(--radius); width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);
+  animation: scaleIn 0.25s ease;
+}
+@keyframes scaleIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--gray-100);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; color: var(--red); }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%; border: none; background: var(--gray-50);
+  cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+  transition: var(--transition); color: var(--gray-700);
+}
+.modal-close:hover { background: var(--red-light); color: var(--red); }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-100); display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ─── Info Banner ────────────────────────────────────────────── */
+.info-banner {
+  background: var(--red-light); border: 1px solid #F1948A; border-radius: var(--radius-sm);
+  padding: 14px 18px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 20px;
+}
+.info-banner p { font-size: 0.85rem; color: var(--red-deep); line-height: 1.5; }
+
+/* ─── Tab Nav ────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; background: var(--gray-50); padding: 4px; border-radius: 10px; margin-bottom: 24px; }
+.tab-btn {
+  flex: 1; padding: 9px 16px; border: none; background: none; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+  color: var(--gray-500); font-family: 'DM Sans', sans-serif;
+}
+.tab-btn.active { background: white; color: var(--red); box-shadow: var(--shadow-sm); }
+
+/* ─── Progress Bar ───────────────────────────────────────────── */
+.progress-wrap { background: var(--gray-100); border-radius: 4px; height: 8px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(--red), #E74C3C); border-radius: 4px; transition: width 0.6s ease; }
+
+/* ─── Alert Pulse ────────────────────────────────────────────── */
+.pulse-dot {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--red);
+  animation: pulse-ring 1.5s infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(192,57,43,0.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(192,57,43,0); }
+  100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+}
+
+/* ─── Footer ─────────────────────────────────────────────────── */
+footer {
+  background: var(--gray-900); color: var(--gray-300); text-align: center;
+  padding: 32px 24px; margin-top: 60px; font-size: 0.85rem;
+}
+footer strong { color: var(--red); }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .form-row { grid-template-columns: 1fr; }
+  .nav-btn.ghost { display: none; }
+  .stats-bar { gap: 24px; }
+}
+
+/* ─── Utility ────────────────────────────────────────────────── */
+.text-red   { color: var(--red); }
+.text-muted { color: var(--gray-500); }
+.text-sm    { font-size: 0.85rem; }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.divider { border: none; border-top: 1px solid var(--gray-100); margin: 20px 0; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.gap-2 { gap: 8px; }
+.justify-between { justify-content: space-between; }
+.chip {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.chip-red { background: var(--red-light); color: var(--red-deep); }
+.chip-green { background: #E8F5E9; color: var(--success); }
+.chip-orange { background: #FFF3E0; color: #E65100; }
+
+/* Hospital login section */
+.login-card {
+  max-width: 440px; margin: 48px auto;
+  background: white; border-radius: var(--radius);
+  box-shadow: var(--shadow-lg); border: 1px solid var(--gray-100);
+  overflow: hidden;
+}
+.login-top {
+  background: linear-gradient(135deg, var(--red-deep), var(--red));
+  padding: 32px 32px 28px; text-align: center; color: white;
+}
+.login-top h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; }
+.login-top p { font-size: 0.9rem; opacity: 0.85; margin-top: 6px; }
+.login-body { padding: 32px; }
+
+/* Donor status row */
+.status-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--gray-50); border-radius: var(--radius-sm);
+  margin-bottom: 8px; font-size: 0.88rem;
+}
+.status-row strong { color: var(--gray-900); }
+
+/* Countdown strip */
+.countdown-strip {
+  background: linear-gradient(90deg, var(--red-deep), var(--red));
+  color: white; text-align: center; padding: 10px;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 0.02em;
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOAST CONTAINER ─────────────────────────────────────── -->
+<div id="toast-container"></div>
+
+<!-- ── LOADER ──────────────────────────────────────────────── -->
+<div id="loader">
+  <div class="spinner"></div>
+  <span style="color:var(--gray-500);font-size:0.9rem">Please wait…</span>
+</div>
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-brand" onclick="showPage('home')">
+      <span class="blood-icon">🩸</span>Blood<span class="drop">Connect</span>
+    </a>
+    <button class="nav-btn ghost" onclick="showPage('home')">Home</button>
+    <button class="nav-btn ghost" onclick="showPage('donors')">Find Donors</button>
+    <button class="nav-btn ghost" onclick="showPage('hospitals')">Hospitals</button>
+    <button class="nav-btn ghost" onclick="showPage('alerts')">Alerts</button>
+    <button class="nav-btn primary" onclick="showPage('register')" id="nav-register-btn">Donate Blood</button>
+    <button class="nav-btn ghost" onclick="showPage('hospital-login')" id="nav-hosp-btn" style="display:none">Hospital Login</button>
+    <button class="nav-btn primary" onclick="showPage('hospital-dashboard')" id="nav-hosp-dash" style="display:none">Dashboard</button>
+    <button class="nav-btn ghost" onclick="hospitalLogout()" id="nav-hosp-logout" style="display:none">Logout</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: HOME ─────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-content">
+      <h1><span>Every Drop Counts</span>Give Blood, Save Lives</h1>
+      <p>Connect with hospitals in real time. Register as a donor, receive urgent alerts for nearby blood needs, and track your donation history — all in one place.</p>
+      <div class="hero-btns">
+        <button class="btn-hero-primary" onclick="showPage('register')">🩸 Become a Donor</button>
+        <button class="btn-hero-ghost" onclick="showPage('hospitals')">🏥 Find Hospitals</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-num" id="stat-donors">—</div>
+      <div class="stat-label">Active Donors</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-hospitals">—</div>
+      <div class="stat-label">Registered Hospitals</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="stat-alerts">—</div>
+      <div class="stat-label">Active Alerts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3 mo</div>
+      <div class="stat-label">Donor Rest Period</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="badge-red">How It Works</div>
+      <h2>Simple. Fast. Life-Saving.</h2>
+    </div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:32px 24px">
+          <div style="font-size:2.8rem;margin-bottom:16px">📋</div>
+          <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:10px;color:var(--red)">1. Register</h3>
+          <p style="font-size:0.88rem;color:var(--gray-500);line-height:1.6">Sign up as a blood donor. Your info is securely stored and shared only with nearby hospitals.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:32px 24px">
+          <div style="font-size:2.8rem;margin-bottom:16px">🔔</div>
+          <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:10px;color:var(--red)">2. Get Alerted</h3>
+          <p style="font-size:0.88rem;color:var(--gray-500);line-height:1.6">Hospitals send urgent alerts only to matching donors within a radius — no spam, no unnecessary notifications.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:32px 24px">
+          <div style="font-size:2.8rem;margin-bottom:16px">🏥</div>
+          <h3 style="font-size:1.05rem;font-weight:700;margin-bottom:10px;color:var(--red)">3. Donate & Rest</h3>
+          <p style="font-size:0.88rem;color:var(--gray-500);line-height:1.6">After donating, you're automatically hidden for 3 months to protect your health. Simple and automatic.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Alerts on Home -->
+    <div class="section-header mt-3">
+      <div class="badge-red">Live Feed</div>
+      <h2>Recent Blood Alerts</h2>
+      <p>Urgent requests from hospitals near you</p>
+    </div>
+    <div id="home-alerts-list">
+      <div class="empty-state"><div class="empty-icon">🔕</div><h3>No active alerts right now</h3><p>Check back soon or register to receive alerts</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: DONOR REGISTRATION ───────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-register" class="page">
+  <div class="section" style="max-width:720px">
+    <div class="section-header">
+      <div class="badge-red">Join Us</div>
+      <h2>Register as a Blood Donor</h2>
+      <p>Your information is protected. After donation, your profile is hidden for 3 months automatically.</p>
+    </div>
+
+    <div class="info-banner">
+      <span>🛡️</span>
+      <p><strong>Privacy First:</strong> After you donate blood, your contact details will be automatically hidden from all hospitals for <strong>3 months</strong> to protect your health and recovery time. If a hospital fails to reach you 5 times, your number will be auto-removed to save their time during emergencies.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span>🩸</span><h3>Personal Information</h3></div>
+      <div class="card-body">
+        <form id="donor-form" onsubmit="registerDonor(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Full Name *</label>
+              <input type="text" id="d-name" placeholder="Arjun Ramesh" required />
+            </div>
+            <div class="form-group">
+              <label>Phone Number *</label>
+              <input type="tel" id="d-phone" placeholder="9876543210" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" id="d-email" placeholder="arjun@example.com" />
+            </div>
+            <div class="form-group">
+              <label>Age *</label>
+              <input type="number" id="d-age" placeholder="25" min="18" max="65" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Blood Group *</label>
+              <select id="d-blood" required>
+                <option value="">-- Select --</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option>
+                <option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="d-gender">
+                <option value="">-- Select --</option>
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>City *</label>
+              <input type="text" id="d-city" placeholder="Chennai" required />
+            </div>
+            <div class="form-group">
+              <label>State *</label>
+              <input type="text" id="d-state" placeholder="Tamil Nadu" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Latitude (for alerts)</label>
+              <input type="number" id="d-lat" placeholder="13.0827" step="any" />
+            </div>
+            <div class="form-group">
+              <label>Longitude (for alerts)</label>
+              <input type="number" id="d-lon" placeholder="80.2707" step="any" />
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+            <input type="checkbox" id="d-alerts" checked style="width:auto;margin:0" />
+            <label for="d-alerts" style="margin:0;font-weight:500">Receive urgent blood request alerts from nearby hospitals</label>
+          </div>
+          <button class="btn btn-primary btn-full" type="submit" style="padding:14px">
+            🩸 Register as Donor
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Detect location helper -->
+    <div style="text-align:center;margin-top:12px">
+      <button class="btn btn-ghost btn-sm" onclick="detectLocation()">📍 Auto-detect my location</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: FIND DONORS ──────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-donors" class="page">
+  <div class="section">
+    <div class="section-header">
+      <div class="badge-red">Search</div>
+      <h2>Find Blood Donors</h2>
+      <p>Only available donors (not in 3-month cooldown) are shown here.</p>
+    </div>
+
+    <div class="search-bar">
+      <div class="form-group">
+        <label>Blood Group</label>
+        <select id="search-blood">
+          <option value="">All Blood Groups</option>
+          <option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option>
+          <option>O+</option><option>O-</option>
+          <option>AB+</option><option>AB-</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>City</label>
+        <input type="text" id="search-city" placeholder="Chennai" />
+      </div>
+      <button class="btn btn-primary" onclick="searchDonors()">🔍 Search</button>
+      <button class="btn btn-ghost" onclick="loadAllDonors()">Show All</button>
+    </div>
+
+    <div id="donor-results">
+      <div class="empty-state"><div class="empty-icon">🩸</div><h3>Search for donors above</h3><p>Enter blood group or city to find available donors</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: HOSPITALS ────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-hospitals" class="page">
+  <div class="section">
+    <div class="section-header">
+      <div class="badge-red">Directory</div>
+      <h2>Hospital Locations</h2>
+      <p>Find registered hospitals and their blood bank contacts</p>
+    </div>
+
+    <div class="search-bar">
+      <div class="form-group" style="flex:2">
+        <label>Search by City</label>
+        <input type="text" id="hosp-search" placeholder="Chennai, Delhi, Bangalore…" />
+      </div>
+      <button class="btn btn-primary" onclick="searchHospitals()">🔍 Search</button>
+      <button class="btn btn-ghost" onclick="loadAllHospitals()">Show All</button>
+    </div>
+
+    <div id="hospital-results">
+      <div class="empty-state"><div class="empty-icon">🏥</div><h3>Loading hospitals…</h3></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: ALERTS ───────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-alerts" class="page">
+  <div class="countdown-strip">
+    🚨 URGENT BLOOD ALERTS — Updated in real time from registered hospitals
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div class="badge-red">Live</div>
+      <h2>Active Blood Alerts</h2>
+      <p>These hospitals urgently need blood. Alerts are sent only to nearby matching donors.</p>
+    </div>
+    <div id="alerts-list">
+      <div class="empty-state"><div class="empty-icon">✅</div><h3>No active alerts</h3><p>All current blood needs are met</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: HOSPITAL LOGIN ───────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-hospital-login" class="page">
+  <div class="login-card">
+    <div class="login-top">
+      <div style="font-size:2.5rem;margin-bottom:10px">🏥</div>
+      <h2>Hospital Portal</h2>
+      <p>Log in to manage donors and send urgent alerts</p>
+    </div>
+    <div class="login-body">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="h-username" placeholder="apollo_chennai" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="h-password" placeholder="••••••••" />
+      </div>
+      <button class="btn btn-primary btn-full" onclick="hospitalLogin()" style="padding:13px">
+        Login to Portal →
+      </button>
+      <div style="text-align:center;margin-top:16px">
+        <small class="text-muted">Demo credentials: <strong>apollo_chennai</strong> / <strong>hospital123</strong></small>
+      </div>
+      <hr class="divider" />
+      <p style="text-align:center;font-size:0.85rem;color:var(--gray-500);margin-bottom:14px">New hospital? Register below</p>
+      <button class="btn btn-outline btn-full" onclick="showModal('modal-hosp-register')">Register Your Hospital</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- PAGE: HOSPITAL DASHBOARD ───────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<div id="page-hospital-dashboard" class="page">
+  <div style="background:var(--red);color:white;padding:20px 24px">
+    <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:0.8rem;opacity:0.8;text-transform:uppercase;letter-spacing:0.05em">Hospital Dashboard</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700" id="dash-hosp-name">—</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)" onclick="showTab('tab-donors')">🩸 Donors</button>
+        <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)" onclick="showTab('tab-send-alert')">🚨 Send Alert</button>
+        <button class="btn btn-ghost btn-sm" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3)" onclick="showTab('tab-my-alerts')">📋 My Alerts</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <!-- Stats -->
+    <div class="grid-4 mb-2" id="dash-stats">
+      <div class="dash-stat"><div class="dash-stat-num" id="ds-total">—</div><div class="dash-stat-label">Total Donors (City)</div></div>
+      <div class="dash-stat"><div class="dash-stat-num" id="ds-available">—</div><div class="dash-stat-label">Available Now</div></div>
+      <div class="dash-stat"><div class="dash-stat-num" id="ds-alerts">—</div><div class="dash-stat-label">Alerts Sent</div></div>
+      <div class="dash-stat"><div class="dash-stat-num" id="ds-notified">—</div><div class="dash-stat-label">Donors Notified</div></div>
+    </div>
+
+    <!-- Tab: Donor Search -->
+    <div id="tab-donors" class="dash-tab">
+      <div class="section-header">
+        <h2>Donor Search</h2>
+        <p>Search available donors. Donors in 3-month cooldown are automatically hidden.</p>
+      </div>
+      <div class="search-bar">
+        <div class="form-group">
+          <label>Blood Group</label>
+          <select id="dash-search-blood">
+            <option value="">All</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option>
+            <option>AB+</option><option>AB-</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>City</label>
+          <input type="text" id="dash-search-city" placeholder="Chennai" />
+        </div>
+        <button class="btn btn-primary" onclick="dashSearchDonors()">🔍 Search</button>
+      </div>
+      <div id="dash-donor-results"></div>
+    </div>
+
+    <!-- Tab: Send Alert -->
+    <div id="tab-send-alert" class="dash-tab" style="display:none">
+      <div class="section-header">
+        <h2>Send Urgent Blood Alert</h2>
+        <p>Alert will be sent ONLY to matching donors within the specified radius who have alerts enabled and are not in recovery period.</p>
+      </div>
+      <div class="card" style="max-width:600px">
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Required Blood Group *</label>
+              <select id="alert-blood" required>
+                <option value="">-- Select --</option>
+                <option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option>
+                <option>O+</option><option>O-</option>
+                <option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Urgency Level *</label>
+              <select id="alert-urgency">
+                <option value="CRITICAL">🔴 Critical</option>
+                <option value="HIGH" selected>🟠 High</option>
+                <option value="MEDIUM">🟡 Medium</option>
+                <option value="LOW">🟢 Low</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Search Radius (km)</label>
+              <input type="number" id="alert-radius" value="20" min="5" max="100" />
+            </div>
+            <div class="form-group">
+              <label>Units Needed</label>
+              <input type="text" id="alert-units" placeholder="2 units" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Alert Message *</label>
+            <textarea id="alert-message" placeholder="URGENT: Patient in ICU requires O+ blood immediately. Please contact us ASAP." required></textarea>
+          </div>
+          <button class="btn btn-danger btn-full" onclick="sendAlert()" style="padding:13px">
+            🚨 Send Urgent Alert to Nearby Donors
+          </button>
+        </div>
+      </div>
+      <div id="alert-result" class="mt-2" style="display:none"></div>
+    </div>
+
+    <!-- Tab: My Alerts -->
+    <div id="tab-my-alerts" class="dash-tab" style="display:none">
+      <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Alert History</h2>
+          <p>All blood alerts sent by your hospital</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadMyAlerts()">↺ Refresh</button>
+      </div>
+      <div id="my-alerts-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODALS ─────────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<!-- Hospital Register Modal -->
+<div id="modal-hosp-register" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Register Hospital</h3>
+      <button class="modal-close" onclick="closeModal('modal-hosp-register')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Hospital Name *</label>
+          <input type="text" id="rh-name" placeholder="Apollo Hospitals" />
+        </div>
+        <div class="form-group">
+          <label>Phone *</label>
+          <input type="tel" id="rh-phone" placeholder="044-12345678" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>City *</label>
+          <input type="text" id="rh-city" placeholder="Chennai" />
+        </div>
+        <div class="form-group">
+          <label>State *</label>
+          <input type="text" id="rh-state" placeholder="Tamil Nadu" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Full Address</label>
+        <input type="text" id="rh-address" placeholder="21, Greams Lane, Chennai" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="rh-email" placeholder="bloodbank@hospital.com" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Latitude</label>
+          <input type="number" id="rh-lat" placeholder="13.0604" step="any" />
+        </div>
+        <div class="form-group">
+          <label>Longitude</label>
+          <input type="number" id="rh-lon" placeholder="80.2496" step="any" />
+        </div>
+      </div>
+      <hr class="divider" />
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username (for login) *</label>
+          <input type="text" id="rh-username" placeholder="apollo_chennai" />
+        </div>
+        <div class="form-group">
+          <label>Password *</label>
+          <input type="password" id="rh-password" placeholder="••••••••" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-hosp-register')">Cancel</button>
+      <button class="btn btn-primary" onclick="registerHospital()">Register Hospital</button>
+    </div>
+  </div>
+</div>
+
+<!-- Donor Detail Modal -->
+<div id="modal-donor-detail" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Donor Details</h3>
+      <button class="modal-close" onclick="closeModal('modal-donor-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="donor-detail-body"></div>
+    <div class="modal-footer" id="donor-detail-footer"></div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─────────────────────────────────────────────── -->
+<footer>
+  <p>❤️ <strong>BloodConnect</strong> — Saving lives through technology</p>
+  <p style="margin-top:8px;font-size:0.78rem;opacity:0.7">Backend: Spring Boot + H2 · Frontend: HTML/CSS/JS · © 2024</p>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT ─────────────────────────────────────────────── -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<script>
+const API = 'http://localhost:8080/api';
+let currentHospital = null;
+
+// ── Utilities ─────────────────────────────────────────────────
+function showLoader()  { document.getElementById('loader').classList.add('show'); }
+function hideLoader()  { document.getElementById('loader').classList.remove('show'); }
+
+function toast(msg, type = 'info') {
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️' };
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 4200);
+}
+
+async function api(method, path, body) {
+  showLoader();
+  try {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(API + path, opts);
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    toast('Cannot connect to backend. Is Spring Boot running on port 8080?', 'error');
+    return null;
+  } finally {
+    hideLoader();
+  }
+}
+
+// ── Pages ──────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'home')      loadHomeStats();
+  if (id === 'hospitals') loadAllHospitals();
+  if (id === 'alerts')    loadAlerts();
+  if (id === 'donors')    loadAllDonors();
+  if (id === 'hospital-dashboard') loadDashboard();
+  if (id === 'hospital-login') updateNavForLogin();
+}
+
+function updateNavForLogin() {
+  if (!currentHospital) {
+    document.getElementById('nav-hosp-btn').style.display = 'flex';
+    document.getElementById('nav-hosp-dash').style.display = 'none';
+    document.getElementById('nav-hosp-logout').style.display = 'none';
+  }
+}
+
+// ── Home Stats ─────────────────────────────────────────────────
+async function loadHomeStats() {
+  const [donors, hospitals, alerts] = await Promise.all([
+    api('GET', '/donors/available'),
+    api('GET', '/hospitals'),
+    api('GET', '/alerts/recent')
+  ]);
+  if (donors)   document.getElementById('stat-donors').textContent    = donors.length;
+  if (hospitals) document.getElementById('stat-hospitals').textContent = hospitals.length;
+  if (alerts)   document.getElementById('stat-alerts').textContent    = alerts.filter(a=>a.status==='ACTIVE').length;
+
+  if (alerts && alerts.length) {
+    document.getElementById('home-alerts-list').innerHTML =
+      alerts.slice(0,4).map(renderAlertCard).join('');
+  }
+}
+
+// ── Donor Registration ─────────────────────────────────────────
+async function registerDonor(e) {
+  e.preventDefault();
+  const donor = {
+    name:          document.getElementById('d-name').value.trim(),
+    phone:         document.getElementById('d-phone').value.trim(),
+    email:         document.getElementById('d-email').value.trim(),
+    bloodGroup:    document.getElementById('d-blood').value,
+    age:           parseInt(document.getElementById('d-age').value),
+    gender:        document.getElementById('d-gender').value,
+    city:          document.getElementById('d-city').value.trim(),
+    state:         document.getElementById('d-state').value.trim(),
+    latitude:      parseFloat(document.getElementById('d-lat').value) || 0,
+    longitude:     parseFloat(document.getElementById('d-lon').value) || 0,
+    alertsEnabled: document.getElementById('d-alerts').checked
+  };
+
+  const res = await api('POST', '/donors/register', donor);
+  if (res?.success) {
+    toast('🎉 Registration successful! Welcome to BloodConnect.', 'success');
+    document.getElementById('donor-form').reset();
+    setTimeout(() => showPage('home'), 1500);
+  } else {
+    toast(res?.message || 'Registration failed', 'error');
+  }
+}
+
+function detectLocation() {
+  if (!navigator.geolocation) { toast('Geolocation not supported', 'warning'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('d-lat').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('d-lon').value = pos.coords.longitude.toFixed(6);
+    toast('📍 Location detected!', 'success');
+  }, () => toast('Could not detect location', 'warning'));
+}
+
+// ── Donor Search ───────────────────────────────────────────────
+async function searchDonors() {
+  const blood = document.getElementById('search-blood').value;
+  const city  = document.getElementById('search-city').value.trim();
+  let qs = '?';
+  if (blood) qs += `bloodGroup=${encodeURIComponent(blood)}&`;
+  if (city)  qs += `city=${encodeURIComponent(city)}`;
+  const donors = await api('GET', '/donors/search' + qs);
+  renderDonorResults(donors, 'donor-results');
+}
+
+async function loadAllDonors() {
+  const donors = await api('GET', '/donors/available');
+  renderDonorResults(donors, 'donor-results');
+}
+
+function renderDonorResults(donors, containerId) {
+  const el = document.getElementById(containerId);
+  if (!donors || donors.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No donors found</h3><p>Try a different search or blood group</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="donor-grid">${donors.map(renderDonorCard).join('')}</div>`;
+}
+
+function renderDonorCard(d) {
+  const cooldown = d.lastDonationDate &&
+    new Date(d.lastDonationDate) > new Date(Date.now() - 90*24*60*60*1000);
+  return `
+  <div class="donor-card">
+    <div class="donor-blood-badge">${d.bloodGroup}</div>
+    <div class="donor-name">${d.name}</div>
+    <div class="donor-meta">📍 ${d.city}, ${d.state}</div>
+    <div class="donor-meta">🎂 ${d.age} yrs &nbsp;·&nbsp; ${d.gender || 'N/A'}</div>
+    <div class="donor-meta">📞 ${d.phone}</div>
+    ${cooldown
+      ? `<div class="cooldown-badge">⏳ Resting (donated recently)</div>`
+      : `<div class="available-badge">✅ Available</div>`}
+    <div class="donor-actions">
+      <button class="btn btn-outline btn-sm" onclick="viewDonor(${d.id})">View Details</button>
+    </div>
+  </div>`;
+}
+
+async function viewDonor(id) {
+  const d = await api('GET', `/donors/${id}`);
+  if (!d) return;
+  const cooldownEnd = d.cooldownEndDate ? new Date(d.cooldownEndDate).toLocaleDateString('en-IN') : null;
+  document.getElementById('donor-detail-body').innerHTML = `
+    <div style="text-align:center;padding:10px 0 20px">
+      <div style="font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:900;color:var(--red);margin-bottom:8px">${d.bloodGroup}</div>
+      <div style="font-size:1.2rem;font-weight:700">${d.name}</div>
+      <div style="color:var(--gray-500);font-size:0.9rem">${d.city}, ${d.state}</div>
+    </div>
+    <div class="status-row"><span>📞 Phone</span><strong>${d.phone}</strong></div>
+    <div class="status-row"><span>✉️ Email</span><strong>${d.email || '—'}</strong></div>
+    <div class="status-row"><span>🎂 Age / Gender</span><strong>${d.age} yrs · ${d.gender || '—'}</strong></div>
+    <div class="status-row"><span>📅 Registered</span><strong>${new Date(d.registeredAt).toLocaleDateString('en-IN')}</strong></div>
+    <div class="status-row"><span>🩸 Last Donated</span><strong>${d.lastDonationDate ? new Date(d.lastDonationDate).toLocaleDateString('en-IN') : 'Never'}</strong></div>
+    <div class="status-row"><span>🔔 Alerts Enabled</span><strong>${d.alertsEnabled ? '✅ Yes' : '❌ No'}</strong></div>
+    <div class="status-row"><span>⚠️ Failed Contacts</span><strong>${d.failedContactAttempts}/5</strong></div>
+    ${cooldownEnd ? `<div class="info-banner mt-1"><span>⏳</span><p>This donor is in the 3-month recovery period. Available from: <strong>${cooldownEnd}</strong></p></div>` : ''}
+  `;
+  document.getElementById('donor-detail-footer').innerHTML = `
+    ${currentHospital ? `
+      <button class="btn btn-ghost btn-sm" onclick="failedContact(${d.id})">📵 Failed to Reach</button>
+      <button class="btn btn-success btn-sm" onclick="recordDonation(${d.id})">✅ Mark Donated</button>
+    ` : ''}
+    <button class="btn btn-ghost" onclick="closeModal('modal-donor-detail')">Close</button>
+  `;
+  showModal('modal-donor-detail');
+}
+
+async function failedContact(donorId) {
+  const res = await api('POST', `/donors/${donorId}/failed-contact`);
+  if (res?.success) {
+    toast(res.message, res.donor?.deleted ? 'warning' : 'info');
+    closeModal('modal-donor-detail');
+  }
+}
+
+async function recordDonation(donorId) {
+  const notes = prompt('Any notes about this donation? (optional)') || '';
+  const res = await api('POST', `/donors/${donorId}/donate`, {
+    hospitalId: currentHospital?.id,
+    notes
+  });
+  if (res?.success) {
+    toast('✅ Donation recorded. Donor hidden for 3 months.', 'success');
+    closeModal('modal-donor-detail');
+    dashSearchDonors();
+  }
+}
+
+// ── Hospitals ──────────────────────────────────────────────────
+async function loadAllHospitals() {
+  const hospitals = await api('GET', '/hospitals');
+  renderHospitals(hospitals);
+}
+
+async function searchHospitals() {
+  const city = document.getElementById('hosp-search').value.trim();
+  if (!city) { loadAllHospitals(); return; }
+  const hospitals = await api('GET', `/hospitals/search?city=${encodeURIComponent(city)}`);
+  renderHospitals(hospitals);
+}
+
+function renderHospitals(hospitals) {
+  const el = document.getElementById('hospital-results');
+  if (!hospitals || hospitals.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🏥</div><h3>No hospitals found</h3></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="grid-3">${hospitals.map(h => `
+    <div class="hospital-card">
+      <div class="hospital-icon">🏥</div>
+      <div class="hospital-name">${h.name}</div>
+      <div class="hospital-meta">📍 ${h.address || h.city + ', ' + h.state}</div>
+      <div class="hospital-meta">📞 ${h.phone || '—'}</div>
+      <div class="hospital-meta">✉️ ${h.email || '—'}</div>
+      <div style="margin-top:12px">
+        <span class="chip chip-red">${h.city}</span>
+        <span class="chip chip-red" style="margin-left:6px">${h.state}</span>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+// ── Alerts ─────────────────────────────────────────────────────
+async function loadAlerts() {
+  const alerts = await api('GET', '/alerts/recent');
+  const el = document.getElementById('alerts-list');
+  if (!alerts || alerts.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><h3>No active alerts</h3><p>All current blood needs are met</p></div>`;
+    return;
+  }
+  el.innerHTML = alerts.map(renderAlertCard).join('');
+}
+
+function renderAlertCard(a) {
+  const date = new Date(a.createdAt).toLocaleString('en-IN');
+  const urgencyColors = { CRITICAL:'#B71C1C', HIGH:'#E65100', MEDIUM:'#F57F17', LOW:var_success };
+  return `
+  <div class="alert-card ${a.status === 'RESOLVED' ? 'resolved' : ''}">
+    <div class="alert-urgent">
+      <div class="pulse-dot" style="${a.status==='RESOLVED'?'background:var(--success);animation:none':''}"></div>
+      <span class="urgency-badge urgency-${a.urgency}">${a.urgency}</span>
+      <span style="font-size:1.1rem;font-weight:800;color:var(--red);font-family:'Playfair Display',serif">${a.bloodGroup}</span>
+      <span style="margin-left:auto;font-size:0.78rem;color:var(--gray-500)">${date}</span>
+    </div>
+    <div style="font-weight:600;margin-bottom:6px">${a.hospital?.name || 'Unknown Hospital'}</div>
+    <div style="font-size:0.88rem;color:var(--gray-700);margin-bottom:10px;line-height:1.5">${a.message}</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.8rem;color:var(--gray-500)">
+      <span>📍 ${a.hospital?.city || '—'}</span>
+      <span>👥 ${a.donorsNotified} donors notified</span>
+      <span>🔍 Radius: ${a.radiusKm} km</span>
+      ${a.unitsNeeded ? `<span>🩸 ${a.unitsNeeded} unit(s) needed</span>` : ''}
+      <span class="chip ${a.status==='ACTIVE'?'chip-orange':'chip-green'}">${a.status}</span>
+    </div>
+  </div>`;
+}
+
+// ── Hospital Auth ──────────────────────────────────────────────
+async function hospitalLogin() {
+  const username = document.getElementById('h-username').value.trim();
+  const password = document.getElementById('h-password').value;
+  if (!username || !password) { toast('Enter username and password', 'warning'); return; }
+
+  const res = await api('POST', '/hospitals/login', { username, password });
+  if (res?.success) {
+    currentHospital = res.hospital;
+    toast(`Welcome, ${currentHospital.name}!`, 'success');
+    document.getElementById('nav-hosp-btn').style.display     = 'none';
+    document.getElementById('nav-register-btn').style.display = 'none';
+    document.getElementById('nav-hosp-dash').style.display    = 'flex';
+    document.getElementById('nav-hosp-logout').style.display  = 'flex';
+    showPage('hospital-dashboard');
+  } else {
+    toast(res?.message || 'Invalid credentials', 'error');
+  }
+}
+
+function hospitalLogout() {
+  currentHospital = null;
+  document.getElementById('nav-hosp-btn').style.display     = 'flex';
+  document.getElementById('nav-register-btn').style.display = 'flex';
+  document.getElementById('nav-hosp-dash').style.display    = 'none';
+  document.getElementById('nav-hosp-logout').style.display  = 'none';
+  toast('Logged out successfully', 'info');
+  showPage('home');
+}
+
+async function registerHospital() {
+  const hosp = {
+    name:     document.getElementById('rh-name').value.trim(),
+    phone:    document.getElementById('rh-phone').value.trim(),
+    city:     document.getElementById('rh-city').value.trim(),
+    state:    document.getElementById('rh-state').value.trim(),
+    address:  document.getElementById('rh-address').value.trim(),
+    email:    document.getElementById('rh-email').value.trim(),
+    latitude: parseFloat(document.getElementById('rh-lat').value) || 0,
+    longitude:parseFloat(document.getElementById('rh-lon').value) || 0,
+    username: document.getElementById('rh-username').value.trim(),
+    password: document.getElementById('rh-password').value
+  };
+  if (!hosp.name || !hosp.username || !hosp.password) {
+    toast('Name, username and password are required', 'warning'); return;
+  }
+  const res = await api('POST', '/hospitals/register', hosp);
+  if (res?.success) {
+    toast('Hospital registered! You can now log in.', 'success');
+    closeModal('modal-hosp-register');
+  } else {
+    toast(res?.message || 'Registration failed', 'error');
+  }
+}
+
+// ── Hospital Dashboard ─────────────────────────────────────────
+async function loadDashboard() {
+  if (!currentHospital) { showPage('hospital-login'); return; }
+  document.getElementById('dash-hosp-name').textContent = currentHospital.name;
+
+  const [allDonors, available, myAlerts] = await Promise.all([
+    api('GET', `/donors/search?city=${encodeURIComponent(currentHospital.city)}`),
+    api('GET', '/donors/available'),
+    api('GET', `/alerts/hospital/${currentHospital.id}`)
+  ]);
+
+  document.getElementById('ds-total').textContent     = allDonors?.length ?? '—';
+  document.getElementById('ds-available').textContent  = available?.length ?? '—';
+  document.getElementById('ds-alerts').textContent     = myAlerts?.length ?? '—';
+  const notified = myAlerts?.reduce((s,a) => s + (a.donorsNotified||0), 0) ?? 0;
+  document.getElementById('ds-notified').textContent  = notified;
+
+  // Pre-fill city in dash search
+  document.getElementById('dash-search-city').value = currentHospital.city;
+  await dashSearchDonors();
+}
+
+async function dashSearchDonors() {
+  const blood = document.getElementById('dash-search-blood').value;
+  const city  = document.getElementById('dash-search-city').value.trim();
+  let qs = '?';
+  if (blood) qs += `bloodGroup=${encodeURIComponent(blood)}&`;
+  if (city)  qs += `city=${encodeURIComponent(city)}`;
+  const donors = await api('GET', '/donors/search' + qs);
+  renderDonorResults(donors, 'dash-donor-results');
+}
+
+async function sendAlert() {
+  if (!currentHospital) { toast('Please log in', 'error'); return; }
+  const blood   = document.getElementById('alert-blood').value;
+  const urgency = document.getElementById('alert-urgency').value;
+  const radius  = parseFloat(document.getElementById('alert-radius').value) || 20;
+  const units   = document.getElementById('alert-units').value.trim();
+  const message = document.getElementById('alert-message').value.trim();
+
+  if (!blood)   { toast('Select required blood group', 'warning'); return; }
+  if (!message) { toast('Enter an alert message', 'warning'); return; }
+
+  const res = await api('POST', '/alerts/send', {
+    hospitalId: currentHospital.id,
+    bloodGroup: blood, message, radiusKm: radius, urgency, unitsNeeded: units
+  });
+
+  const resultEl = document.getElementById('alert-result');
+  resultEl.style.display = 'block';
+
+  if (res?.success) {
+    toast(`🚨 Alert sent to ${res.donorsNotified} donors!`, 'success');
+    resultEl.innerHTML = `
+      <div class="card" style="border-left:5px solid var(--success)">
+        <div class="card-body">
+          <div style="font-size:1.1rem;font-weight:700;color:var(--success);margin-bottom:10px">✅ Alert Sent Successfully!</div>
+          <div class="status-row"><span>👥 Donors Notified</span><strong>${res.donorsNotified}</strong></div>
+          <div class="status-row"><span>🩸 Blood Group</span><strong>${blood}</strong></div>
+          <div class="status-row"><span>🔍 Radius</span><strong>${radius} km</strong></div>
+          <div class="status-row"><span>🚨 Urgency</span><strong>${urgency}</strong></div>
+          ${res.donors?.length > 0 ? `
+            <div style="margin-top:14px">
+              <div style="font-size:0.85rem;font-weight:600;color:var(--gray-700);margin-bottom:8px">Notified Donors:</div>
+              <div class="donor-grid">
+                ${res.donors.map(d => `
+                  <div style="background:var(--gray-50);border-radius:8px;padding:12px;border:1px solid var(--gray-100)">
+                    <div style="font-weight:700;color:var(--red)">${d.bloodGroup}</div>
+                    <div style="font-weight:600;font-size:0.9rem">${d.name}</div>
+                    <div style="font-size:0.82rem;color:var(--gray-500)">📞 ${d.phone}</div>
+                    <div style="font-size:0.82rem;color:var(--gray-500)">📍 ${d.city}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>` : '<p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px">No nearby donors found for this blood group within the radius. Try increasing the radius.</p>'}
+        </div>
+      </div>`;
+    loadMyAlerts();
+    loadDashboard();
+  } else {
+    toast(res?.message || 'Failed to send alert', 'error');
+    resultEl.innerHTML = `<div class="info-banner"><span>❌</span><p>${res?.message || 'Failed to send alert'}</p></div>`;
+  }
+}
+
+async function loadMyAlerts() {
+  if (!currentHospital) return;
+  const alerts = await api('GET', `/alerts/hospital/${currentHospital.id}`);
+  const el = document.getElementById('my-alerts-list');
+  if (!alerts || alerts.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><h3>No alerts sent yet</h3></div>`;
+    return;
+  }
+  el.innerHTML = alerts.map(a => {
+    const card = renderAlertCard(a);
+    // Add resolve button for active alerts
+    if (a.status === 'ACTIVE') {
+      return card.replace('</div>', `
+        <div style="margin-top:10px">
+          <button class="btn btn-success btn-sm" onclick="resolveAlert(${a.id})">✅ Mark Resolved</button>
+        </div></div>`);
+    }
+    return card;
+  }).join('');
+}
+
+async function resolveAlert(alertId) {
+  const res = await api('PUT', `/alerts/${alertId}/resolve`);
+  if (res?.success) {
+    toast('Alert marked as resolved', 'success');
+    loadMyAlerts();
+  }
+}
+
+// ── Dashboard Tabs ─────────────────────────────────────────────
+function showTab(tabId) {
+  document.querySelectorAll('.dash-tab').forEach(t => t.style.display = 'none');
+  document.getElementById(tabId).style.display = 'block';
+  if (tabId === 'tab-my-alerts') loadMyAlerts();
+}
+
+// ── Modals ─────────────────────────────────────────────────────
+function showModal(id)  { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// CSS variable helper for JS
+const var_success = 'var(--success)';
+
+// ── Init ───────────────────────────────────────────────────────
+loadHomeStats();
+// Show hospital login link in nav
+document.getElementById('nav-hosp-btn').style.display = 'flex';
+</script>
+</body>
+</html>
